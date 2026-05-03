@@ -157,16 +157,41 @@ async function executeWallet(privateKey, provider, wethAddress, targetTokens) {
         return;
       }
 
-      const tokenIn = targetTokens[randomInt(0, targetTokens.length - 1)];
-      const tokenContract = new ethers.Contract(tokenIn, ERC20_ABI, wallet);
-      const symbol = await tokenContract.symbol().catch(() => 'UNKNOWN');
-      const decimals = await tokenContract.decimals().catch(() => 18);
+      // Try tokens until finding one with non-zero balance
+      let tokenIn = null;
+      let tokenContract = null;
+      let symbol = 'UNKNOWN';
+      let decimals = 18;
+      let tokenBalance = 0n;
+      let triedIndices = new Set();
 
-      const tokenBalance = await tokenContract.balanceOf(address);
-      console.log(`[BALANCE] ${symbol}: ${ethers.formatUnits(tokenBalance, decimals)}`);
+      while (triedIndices.size < targetTokens.length) {
+        let idx = randomInt(0, targetTokens.length - 1);
+        while (triedIndices.has(idx)) {
+          idx = randomInt(0, targetTokens.length - 1);
+        }
+        triedIndices.add(idx);
 
-      if (tokenBalance === 0n) {
-        console.log(`[SKIP] ${symbol} balance is zero`);
+        const candidate = targetTokens[idx];
+        const candidateContract = new ethers.Contract(candidate, ERC20_ABI, wallet);
+        const candidateSymbol = await candidateContract.symbol().catch(() => 'UNKNOWN');
+        const candidateDecimals = await candidateContract.decimals().catch(() => 18);
+        const candidateBalance = await candidateContract.balanceOf(address);
+
+        console.log(`[BALANCE CHECK] ${candidateSymbol}: ${ethers.formatUnits(candidateBalance, candidateDecimals)}`);
+
+        if (candidateBalance > 0n) {
+          tokenIn = candidate;
+          tokenContract = candidateContract;
+          symbol = candidateSymbol;
+          decimals = candidateDecimals;
+          tokenBalance = candidateBalance;
+          break;
+        }
+      }
+
+      if (!tokenIn || tokenBalance === 0n) {
+        console.log(`[SKIP] All target tokens have zero balance`);
         return;
       }
 
@@ -204,30 +229,54 @@ async function executeWallet(privateKey, provider, wethAddress, targetTokens) {
         return;
       }
 
-      let idxIn = randomInt(0, targetTokens.length - 1);
-      let idxOut = randomInt(0, targetTokens.length - 1);
-      while (idxOut === idxIn) {
-        idxOut = randomInt(0, targetTokens.length - 1);
+      // Try tokens until finding tokenIn with non-zero balance
+      let tokenIn = null;
+      let tokenInContract = null;
+      let symbolIn = 'UNKNOWN';
+      let decimalsIn = 18;
+      let tokenBalance = 0n;
+      let triedIndices = new Set();
+
+      while (triedIndices.size < targetTokens.length) {
+        let idx = randomInt(0, targetTokens.length - 1);
+        while (triedIndices.has(idx)) {
+          idx = randomInt(0, targetTokens.length - 1);
+        }
+        triedIndices.add(idx);
+
+        const candidate = targetTokens[idx];
+        const candidateContract = new ethers.Contract(candidate, ERC20_ABI, wallet);
+        const candidateSymbol = await candidateContract.symbol().catch(() => 'UNKNOWN');
+        const candidateDecimals = await candidateContract.decimals().catch(() => 18);
+        const candidateBalance = await candidateContract.balanceOf(address);
+
+        console.log(`[BALANCE CHECK] ${candidateSymbol}: ${ethers.formatUnits(candidateBalance, candidateDecimals)}`);
+
+        if (candidateBalance > 0n) {
+          tokenIn = candidate;
+          tokenInContract = candidateContract;
+          symbolIn = candidateSymbol;
+          decimalsIn = candidateDecimals;
+          tokenBalance = candidateBalance;
+          break;
+        }
       }
 
-      const tokenIn = targetTokens[idxIn];
-      const tokenOut = targetTokens[idxOut];
-
-      const tokenInContract = new ethers.Contract(tokenIn, ERC20_ABI, wallet);
-      const tokenOutContract = new ethers.Contract(tokenOut, ERC20_ABI, wallet);
-
-      const symbolIn = await tokenInContract.symbol().catch(() => 'UNKNOWN');
-      const symbolOut = await tokenOutContract.symbol().catch(() => 'UNKNOWN');
-      const decimalsIn = await tokenInContract.decimals().catch(() => 18);
-      const decimalsOut = await tokenOutContract.decimals().catch(() => 18);
-
-      const tokenBalance = await tokenInContract.balanceOf(address);
-      console.log(`[BALANCE] ${symbolIn}: ${ethers.formatUnits(tokenBalance, decimalsIn)}`);
-
-      if (tokenBalance === 0n) {
-        console.log(`[SKIP] ${symbolIn} balance is zero`);
+      if (!tokenIn || tokenBalance === 0n) {
+        console.log(`[SKIP] All target tokens have zero balance`);
         return;
       }
+
+      // Pick tokenOut randomly different from tokenIn
+      let tokenOut = null;
+      while (!tokenOut || tokenOut === tokenIn) {
+        const idxOut = randomInt(0, targetTokens.length - 1);
+        tokenOut = targetTokens[idxOut];
+      }
+
+      const tokenOutContract = new ethers.Contract(tokenOut, ERC20_ABI, wallet);
+      const symbolOut = await tokenOutContract.symbol().catch(() => 'UNKNOWN');
+      const decimalsOut = await tokenOutContract.decimals().catch(() => 18);
 
       const sellPercentage = BigInt(randomInt(1, 100));
       const amountIn = (tokenBalance * sellPercentage) / 100n;
