@@ -1,0 +1,25 @@
+{
+  "name": "swap-bot",
+  "version": "1.0.0",
+  "description": "An automated bot for performing mass swaps on a DEX (Uniswap V2 Style) on the Sepolia Testnet using Node.js and Ethers.js v6.",
+  "main": "swap.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fizzar99/swap-bot.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fizzar99/swap-bot/issues"
+  },
+  "homepage": "https://github.com/fizzar99/swap-bot#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "ethers": "^6.16.0",
+    "express": "^5.2.1"
+  }
+}

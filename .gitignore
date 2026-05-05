@@ -7,3 +7,6 @@ node_modules/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Auto-generated batch summary
+last-batch.json
